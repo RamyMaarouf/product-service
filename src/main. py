@@ -1,0 +1,60 @@
+import os
+import json
+from flask import Flask, jsonify
+from flask_cors import CORS
+from dotenv import load_dotenv
+
+# --- Configuration (Factor III) ---
+# Load environment variables from a .env file (equivalent to Rust's dotenv().ok())
+load_dotenv()
+
+# Fetch the port from the environment or default to 5000 (Flask's default)
+# Note: The Rust code defaulted to 3030, but 5000 is standard for Flask.
+try:
+    PORT = int(os.getenv("PORT", 5000))
+except ValueError:
+    print("Warning: PORT environment variable is not a valid number. Defaulting to 5000.")
+    PORT = 5000
+    
+# --- Application Initialization ---
+app = Flask(__name__)
+
+# Configure CORS (equivalent to Rust's warp::cors().allow_any_origin().allow_methods(vec!["GET"]))
+# Allow GET requests from any origin
+CORS(app, resources={r"/products": {"origins": "*", "methods": ["GET"]}})
+
+
+# --- API Endpoint: GET /products ---
+# Defines a route that listens for requests to the "/products" path.
+# (Equivalent to Rust's warp::path("products").map(|| { ... }))
+@app.route('/products', methods=['GET'])
+def list_products():
+    """
+    Returns a JSON array of product objects.
+    """
+    # Create the list of product objects (equivalent to Rust's serde_json::json! macro)
+    products_data = [
+        {"id": 1, "name": "Dog Food", "price": 19.99}, # Product 1
+        {"id": 2, "name": "Cat Food", "price": 34.99}, # Product 2
+        {"id": 3, "name": "Bird Seeds", "price": 10.99}, # Product 3
+    ]
+    
+    # Return the data as a JSON response (equivalent to warp::reply::json())
+    return jsonify(products_data), 200
+
+# --- Health Check (Standard for Cloud-Native) ---
+@app.route('/', methods=['GET'])
+def health_check():
+    """
+    Returns a simple message indicating the service is running.
+    """
+    return jsonify({'message': 'Product service is running'}), 200
+
+
+# --- Application Runner (Factor VI: Processes) ---
+# The entry point that starts the web server (Equivalent to Rust's warp::serve().run().await)
+if __name__ == '__main__':
+    # host='0.0.0.0' is used to make the server externally visible 
+    # (standard for cloud environments and containers).
+    print(f" * Product Service starting on http://0.0.0.0:{PORT}")
+    app.run(host='0.0.0.0', port=PORT, debug=True)
